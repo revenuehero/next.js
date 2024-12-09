@@ -291,6 +291,9 @@ importers:
       execa:
         specifier: 2.0.3
         version: 2.0.3
+      expect:
+        specifier: 29.7.0
+        version: 29.7.0
       expect-type:
         specifier: 0.14.2
         version: 0.14.2
@@ -357,6 +360,9 @@ importers:
       jest-junit:
         specifier: 16.0.0
         version: 16.0.0
+      jest-snapshot:
+        specifier: 30.0.0-alpha.6
+        version: 30.0.0-alpha.6
       json5:
         specifier: 2.2.3
         version: 2.2.3
@@ -2479,12 +2485,6 @@ packages:
 
   '@babel/plugin-syntax-top-level-await@7.14.5':
     resolution: {integrity: sha512-hx++upLv5U1rgYfwe1xBQUhRmU41NEvpUvrp8jkrSCdvGSnM5/qdRMtylJ6PG5OFkBaHkbTAKTnd3/YyESRHFw==}
-    engines: {node: '>=6.9.0'}
-    peerDependencies:
-      '@babel/core': 7.22.5
-
-  '@babel/plugin-syntax-typescript@7.22.5':
-    resolution: {integrity: sha512-1mS2o03i7t1c6VzH6fdQ3OA8tcEIxwG18zIPRp+UY1Ihv6W+XZzBCVxExF9upussPXJ0xE9XRHwMoNs1ep/nRQ==}
     engines: {node: '>=6.9.0'}
     peerDependencies:
       '@babel/core': 7.22.5
@@ -9799,10 +9799,6 @@ packages:
     resolution: {integrity: sha512-6Lthe1hqXHBNsqvgDzGO6l03XNeu3CrG4RqQ1KM9+l5+jNGpEJfIELx1NS3SEHmJQA8np/u+E4EPRKRiu6m19A==}
     engines: {node: '>=8'}
 
-  istanbul-lib-instrument@6.0.1:
-    resolution: {integrity: sha512-EAMEJBsYuyyztxMxW3g7ugGPkrZsV57v0Hmv3mm1uQsmB+QnZuepg731CRaIgeUVSdmsTngOkSnauNF8p7FIhA==}
-    engines: {node: '>=10'}
-
   istanbul-lib-instrument@6.0.3:
     resolution: {integrity: sha512-Vtgk7L/R2JHyyGW07spoFlB8/lpjiOLTjMdms6AFMraYt3BaJauod/NGrfnVG/y4Ix1JEuMRPDPEj2ua+zz1/Q==}
     engines: {node: '>=10'}
@@ -16160,11 +16156,6 @@ snapshots:
       '@babel/core': 7.22.5
       '@babel/helper-plugin-utils': 7.25.7
 
-  '@babel/plugin-syntax-typescript@7.22.5(@babel/core@7.22.5)':
-    dependencies:
-      '@babel/core': 7.22.5
-      '@babel/helper-plugin-utils': 7.25.7
-
   '@babel/plugin-syntax-typescript@7.25.4(@babel/core@7.22.5)':
     dependencies:
       '@babel/core': 7.22.5
@@ -16411,7 +16402,7 @@ snapshots:
   '@babel/plugin-transform-flow-strip-types@7.22.5(@babel/core@7.22.5)':
     dependencies:
       '@babel/core': 7.22.5
-      '@babel/helper-plugin-utils': 7.24.8
+      '@babel/helper-plugin-utils': 7.25.7
       '@babel/plugin-syntax-flow': 7.22.5(@babel/core@7.22.5)
 
   '@babel/plugin-transform-flow-strip-types@7.25.2(@babel/core@7.22.5)':
@@ -16772,7 +16763,7 @@ snapshots:
   '@babel/plugin-transform-react-constant-elements@7.14.5(@babel/core@7.22.5)':
     dependencies:
       '@babel/core': 7.22.5
-      '@babel/helper-plugin-utils': 7.24.8
+      '@babel/helper-plugin-utils': 7.25.7
 
   '@babel/plugin-transform-react-display-name@7.22.5(@babel/core@7.22.5)':
     dependencies:
@@ -16917,7 +16908,7 @@ snapshots:
       '@babel/helper-annotate-as-pure': 7.22.5
       '@babel/helper-create-class-features-plugin': 7.22.15(@babel/core@7.22.5)
       '@babel/helper-plugin-utils': 7.25.7
-      '@babel/plugin-syntax-typescript': 7.22.5(@babel/core@7.22.5)
+      '@babel/plugin-syntax-typescript': 7.25.4(@babel/core@7.22.5)
     transitivePeerDependencies:
       - supports-color
 
@@ -18143,7 +18134,7 @@ snapshots:
       glob: 7.1.7
       graceful-fs: 4.2.11
       istanbul-lib-coverage: 3.2.0
-      istanbul-lib-instrument: 6.0.1
+      istanbul-lib-instrument: 6.0.3
       istanbul-lib-report: 3.0.0
       istanbul-lib-source-maps: 4.0.0
       istanbul-reports: 3.1.6
@@ -19825,7 +19816,7 @@ snapshots:
 
   '@types/jest@29.5.5':
     dependencies:
-      expect: 29.5.0
+      expect: 29.7.0
       pretty-format: 29.5.0
 
   '@types/jscodeshift@0.11.0':
@@ -25454,16 +25445,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  istanbul-lib-instrument@6.0.1:
-    dependencies:
-      '@babel/core': 7.22.5
-      '@babel/parser': 7.22.5
-      '@istanbuljs/schema': 0.1.2
-      istanbul-lib-coverage: 3.2.0
-      semver: 7.6.3
-    transitivePeerDependencies:
-      - supports-color
-
   istanbul-lib-instrument@6.0.3:
     dependencies:
       '@babel/core': 7.22.5
@@ -28917,7 +28898,7 @@ snapshots:
 
   pretty-format@29.5.0:
     dependencies:
-      '@jest/schemas': 29.4.3
+      '@jest/schemas': 29.6.3
       ansi-styles: 5.2.0
       react-is: 19.0.0-rc-7283a213-20241206
 
