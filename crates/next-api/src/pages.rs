@@ -7,6 +7,7 @@ use next_core::{
     get_edge_resolve_options_context,
     hmr_entry::HmrEntryModule,
     mode::NextMode,
+    next_app::include_modules_module::IncludeModulesModule,
     next_client::{
         get_client_module_options_context, get_client_resolve_options_context,
         get_client_runtime_entries, ClientContextType, RuntimeEntries,
@@ -871,11 +872,34 @@ impl PageEndpoint {
                 runtime,
             } = *self.internal_ssr_chunk_module().await?;
 
-            let reduced_graphs =
-                get_reduced_graphs_for_endpoint(this.pages_project.project(), *ssr_module);
-            let next_dynamic_imports = reduced_graphs
-                .get_next_dynamic_imports_for_endpoint(*ssr_module)
-                .await?;
+            let next_dynamic_imports = if let PageEndpointType::Html = this.ty {
+                // The SSR and Client Graphs are not connected in Pages Router.
+                // We are only interested in get_next_dynamic_imports_for_endpoint at the moment,
+                // which only needs the client graph anyway.
+                //
+                // If we do want to change this to have both included. We'd need to create a
+                // `IncludeModulesModule` that includes both SSR and Client (and use that both there
+                // and in Project::get_all_entries):
+                // let client_module = self.client_module().to_resolved().await?;
+                // let ssr_module = self.internal_ssr_chunk_module().await?.ssr_module;
+                // Ok(Vc::upcast(IncludeModulesModule::new(
+                //     self.source()
+                //         .ident()
+                //         .with_modifier(Vc::cell("unified entrypoint".into())),
+                //     vec![*client_module, *ssr_module],
+                // )))
+
+                let reduced_graphs = get_reduced_graphs_for_endpoint(
+                    this.pages_project.project(),
+                    self.client_module(),
+                );
+                let next_dynamic_imports = reduced_graphs
+                    .get_next_dynamic_imports_for_endpoint(self.client_module())
+                    .await?;
+                Some(next_dynamic_imports)
+            } else {
+                None
+            };
 
             let is_edge = matches!(runtime, NextRuntime::Edge);
             if is_edge {
@@ -898,7 +922,7 @@ impl PageEndpoint {
                     this.pages_project.project().client_chunking_context();
                 let dynamic_import_entries = collect_next_dynamic_chunks(
                     Vc::upcast(client_chunking_context),
-                    &next_dynamic_imports,
+                    next_dynamic_imports,
                     None,
                 )
                 .await?
@@ -934,7 +958,7 @@ impl PageEndpoint {
                     this.pages_project.project().client_chunking_context();
                 let dynamic_import_entries = collect_next_dynamic_chunks(
                     Vc::upcast(client_chunking_context),
-                    &next_dynamic_imports,
+                    next_dynamic_imports,
                     None,
                 )
                 .await?
