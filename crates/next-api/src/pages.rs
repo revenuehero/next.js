@@ -7,7 +7,6 @@ use next_core::{
     get_edge_resolve_options_context,
     hmr_entry::HmrEntryModule,
     mode::NextMode,
-    next_app::include_modules_module::IncludeModulesModule,
     next_client::{
         get_client_module_options_context, get_client_resolve_options_context,
         get_client_runtime_entries, ClientContextType, RuntimeEntries,
