@@ -47,7 +47,7 @@ use turbopack::{
 use turbopack_core::{
     asset::AssetContent,
     chunk::{
-        availability_info::AvailabilityInfo, ChunkingContext, ChunkingContextExt,
+        availability_info::AvailabilityInfo, ChunkGroupResult, ChunkingContext, ChunkingContextExt,
         EntryChunkGroupResult, EvaluatableAsset, EvaluatableAssets,
     },
     context::AssetContext,
@@ -64,7 +64,9 @@ use turbopack_ecmascript::resolve::esm_resolve;
 use turbopack_nodejs::NodeJsChunkingContext;
 
 use crate::{
-    dynamic_imports::{collect_next_dynamic_chunks, DynamicImportedChunks},
+    dynamic_imports::{
+        collect_next_dynamic_chunks, DynamicImportedChunks, NextDynamicChunkAvailability,
+    },
     font::create_font_manifest,
     loadable_manifest::create_react_loadable_manifest,
     module_graph::get_reduced_graphs_for_endpoint,
@@ -726,7 +728,7 @@ impl PageEndpoint {
     }
 
     #[turbo_tasks::function]
-    async fn client_chunks(self: Vc<Self>) -> Result<Vc<OutputAssets>> {
+    async fn client_chunks(self: Vc<Self>) -> Result<Vc<ChunkGroupResult>> {
         async move {
             let this = self.await?;
 
@@ -747,7 +749,7 @@ impl PageEndpoint {
 
             let client_chunking_context = this.pages_project.project().client_chunking_context();
 
-            let client_chunks = client_chunking_context.evaluated_chunk_group_assets(
+            let client_chunk_group = client_chunking_context.evaluated_chunk_group(
                 AssetIdent::from_path(*this.page.await?.base_path),
                 this.pages_project
                     .client_runtime_entries()
@@ -756,7 +758,7 @@ impl PageEndpoint {
                 Value::new(AvailabilityInfo::Root),
             );
 
-            Ok(client_chunks)
+            Ok(client_chunk_group)
         }
         .instrument(tracing::info_span!("page client side rendering"))
         .await
@@ -873,12 +875,12 @@ impl PageEndpoint {
 
             let next_dynamic_imports = if let PageEndpointType::Html = this.ty {
                 // The SSR and Client Graphs are not connected in Pages Router.
-                // We are only interested in get_next_dynamic_imports_for_endpoint at the moment,
-                // which only needs the client graph anyway.
+                // We are only interested in get_next_dynamic_imports_for_endpoint at the
+                // moment, which only needs the client graph anyway.
                 //
                 // If we do want to change this to have both included. We'd need to create a
-                // `IncludeModulesModule` that includes both SSR and Client (and use that both there
-                // and in Project::get_all_entries):
+                // `IncludeModulesModule` that includes both SSR and Client (and use that both
+                // there and in Project::get_all_entries):
                 // let client_module = self.client_module().to_resolved().await?;
                 // let ssr_module = self.internal_ssr_chunk_module().await?.ssr_module;
                 // Ok(Vc::upcast(IncludeModulesModule::new(
@@ -888,6 +890,8 @@ impl PageEndpoint {
                 //     vec![*client_module, *ssr_module],
                 // )))
 
+                let client_availability_info = self.client_chunks().await?.availability_info;
+
                 let reduced_graphs = get_reduced_graphs_for_endpoint(
                     this.pages_project.project(),
                     self.client_module(),
@@ -895,9 +899,24 @@ impl PageEndpoint {
                 let next_dynamic_imports = reduced_graphs
                     .get_next_dynamic_imports_for_endpoint(self.client_module())
                     .await?;
-                Some(next_dynamic_imports)
+                Some((next_dynamic_imports, client_availability_info))
             } else {
                 None
+            };
+
+            let dynamic_import_entries = if let Some((
+                next_dynamic_imports,
+                client_availability_info,
+            )) = next_dynamic_imports
+            {
+                collect_next_dynamic_chunks(
+                    Vc::upcast(this.pages_project.project().client_chunking_context()),
+                    next_dynamic_imports,
+                    NextDynamicChunkAvailability::AvailabilityInfo(client_availability_info),
+                )
+                .await?
+            } else {
+                DynamicImportedChunks::default().resolved_cell()
             };
 
             let is_edge = matches!(runtime, NextRuntime::Edge);
@@ -916,17 +935,6 @@ impl PageEndpoint {
                     )
                     .to_resolved()
                     .await?;
-
-                let client_chunking_context =
-                    this.pages_project.project().client_chunking_context();
-                let dynamic_import_entries = collect_next_dynamic_chunks(
-                    Vc::upcast(client_chunking_context),
-                    next_dynamic_imports,
-                    None,
-                )
-                .await?
-                .to_resolved()
-                .await?;
 
                 Ok(SsrChunk::Edge {
                     files: edge_files,
@@ -952,17 +960,6 @@ impl PageEndpoint {
                         Value::new(AvailabilityInfo::Root),
                     )
                     .await?;
-
-                let client_chunking_context =
-                    this.pages_project.project().client_chunking_context();
-                let dynamic_import_entries = collect_next_dynamic_chunks(
-                    Vc::upcast(client_chunking_context),
-                    next_dynamic_imports,
-                    None,
-                )
-                .await?
-                .to_resolved()
-                .await?;
 
                 let server_asset_trace_file = if this
                     .pages_project
@@ -1128,7 +1125,7 @@ impl PageEndpoint {
 
         let ssr_chunk = match this.ty {
             PageEndpointType::Html => {
-                let client_chunks = self.client_chunks();
+                let client_chunks = *self.client_chunks().await?.assets;
                 client_assets.extend(client_chunks.await?.iter().map(|asset| **asset));
                 let build_manifest = self.build_manifest(client_chunks).to_resolved().await?;
                 let page_loader = self.page_loader(client_chunks);
