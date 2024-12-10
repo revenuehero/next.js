@@ -88,7 +88,7 @@ where
         }
     }
 
-    /// Returns an owned iterator over all edges (node pairs) in breadth first order,
+    /// Returns an owned iterator over all edges (node pairs) in reverse breadth first order,
     /// starting from the roots.
     pub fn into_breadth_first_edges(self) -> IntoBreadthFirstEdges<T> {
         IntoBreadthFirstEdges {
@@ -99,7 +99,7 @@ where
                 .rev()
                 .map(|root| (None, root))
                 .collect(),
-            visited: HashSet::new(),
+            expanded: HashSet::new(),
         }
     }
 
@@ -195,7 +195,7 @@ where
 {
     adjacency_map: HashMap<T, Vec<T>>,
     stack: VecDeque<(Option<T>, T)>,
-    visited: HashSet<T>,
+    expanded: HashSet<T>,
 }
 
 impl<T> Iterator for IntoBreadthFirstEdges<T>
@@ -208,15 +208,13 @@ where
         let (parent, current) = self.stack.pop_front()?;
 
         let Some(neighbors) = self.adjacency_map.get(&current) else {
-            self.visited.insert(current.clone());
             return Some((parent, current));
         };
 
-        if self.visited.insert(current.clone()) {
+        if self.expanded.insert(current.clone()) {
             self.stack.extend(
                 neighbors
                     .iter()
-                    .rev()
                     .map(|neighbor| (Some(current.clone()), neighbor.clone())),
             );
         }
